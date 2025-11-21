@@ -104,9 +104,25 @@ def get_animation_config():
 
 
 # -------- Ice cream flavors ---------
+SAFE_DARK_CHOCOLATE_IMAGE = "https://images.unsplash.com/photo-1464349153735-7db50ed83c84"
+COCA_COLA_IMAGE_ID = "1551024601-bec78aea704b"  # used previously by mistake
+
+
 @app.get("/api/flavors")
 def get_flavors():
     docs = get_documents("icecream")
+
+    # One-time cleanup: replace any accidental Coca-Cola image with an ice-cream image
+    if db and isinstance(docs, list):
+        for d in docs:
+            try:
+                img = d.get("image")
+                if isinstance(img, str) and COCA_COLA_IMAGE_ID in img:
+                    db["icecream"].update_one({"_id": d.get("_id")}, {"$set": {"image": SAFE_DARK_CHOCOLATE_IMAGE}})
+                    d["image"] = SAFE_DARK_CHOCOLATE_IMAGE
+            except Exception:
+                pass
+
     return ObjectIdEncoder.encode(docs)
 
 
@@ -134,7 +150,7 @@ def seed_flavors():
             "description": "70% cocoa, rich and indulgent",
             "price": 3.75,
             "tags": ["chocolate", "rich"],
-            "image": "https://images.unsplash.com/photo-1551024601-bec78aea704b",
+            "image": SAFE_DARK_CHOCOLATE_IMAGE,
             "is_available": True,
         },
         {
